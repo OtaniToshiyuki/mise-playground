@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "eas:version": "eas --version",
+    "firebase:version": "firebase --version",
     "test": "vitest run",
     "test:emulator": "firebase emulators:exec --only firestore --project demo-mise-playground \"pnpm test\""
   },
