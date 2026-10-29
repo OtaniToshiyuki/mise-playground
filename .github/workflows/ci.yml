@@ -1,0 +1,25 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: eas --version
+      - run: firebase --version
+      - run: java -version
+      # eas.json の cli.version 検査は認証より前に走るので、EXPO_TOKEN 無しでも検証できる
+      - name: eas.json の CLI 版制約を満たす
+        run: |
+          out=$(eas config -p ios -e production --non-interactive 2>&1 || true)
+          echo "$out"
+          if grep -q "does not satisfy the CLI version constraint" <<< "$out"; then exit 1; fi
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:emulator
