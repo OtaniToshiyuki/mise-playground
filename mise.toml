@@ -1,5 +1,6 @@
 [settings]
 npm.package_manager = "pnpm"
+minimum_release_age_excludes = ["npm:eas-cli", "npm:firebase-tools"]
 lockfile_platforms = ["linux-x64", "linux-arm64", "macos-x64", "macos-arm64"]
 
 [tools]

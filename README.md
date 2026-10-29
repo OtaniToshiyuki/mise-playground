@@ -61,3 +61,11 @@
 - CI(GitHub Actions + `jdx/mise-action`)での再現とキャッシュ効果
 - 純 Linux / Windows ネイティブでの管理外ディレクトリの挙動
 - `compare/dev-dependencies` ブランチ(数値は一時ディレクトリで計測しただけ)
+
+## minimumReleaseAge(CI で発覚)
+
+- mise は `npm.package_manager = "pnpm"` のとき、pnpm に `--config.minimum-release-age=1440`(24 時間)を渡す。公開から 24 時間未満の版は `ERR_PNPM_NO_MATURE_MATCHING_VERSION` で入らず、`mise install` が失敗する
+- 初回 CI は eas-cli 27.1.0 (19h) / firebase-tools 15.34.2 (14h) で失敗した
+- 解除(採用): `[settings]` に `minimum_release_age_excludes = ["npm:eas-cli", "npm:firebase-tools"]`。この 2 つだけ対象外になり、他のツールには保護が残る(ローカルで公開 13〜19 時間の版が入ることを確認)
+- 全体を解除する場合は `minimum_release_age = "0d"`。環境変数 `npm_config_minimum_release_age` では効かない
+- 対象外にした 2 つは公開直後の版も入る。厳密に守るなら対象外にせず、24 時間以上経った版に固定する
