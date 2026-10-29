@@ -7,6 +7,6 @@ lockfile_platforms = ["linux-x64", "linux-arm64", "macos-x64", "macos-arm64"]
 node = "24"
 pnpm = "10"
 java = "temurin-21"
-"npm:eas-cli" = "27"
+"npm:eas-cli" = "26"
 "npm:firebase-tools" = "15"
 lefthook = "2"
