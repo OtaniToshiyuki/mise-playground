@@ -1,0 +1,10 @@
+# pull / merge / ブランチ切替のあとに mise.toml の版を自動で適用する
+post-merge:
+  jobs:
+    - name: mise install
+      run: mise install --quiet
+
+post-checkout:
+  jobs:
+    - name: mise install
+      run: mise install --quiet
