@@ -102,7 +102,7 @@ mise はディレクトリ単位で有効になるため、新旧プロジェク
   - ただし、設定された版がないので、shim は **PATH の次の同名コマンド(nodebrew など)を起動する**。実質、これまでの `node` がそのまま動く(`mise.toml` のないディレクトリで shim 経由の `node -v` と nodebrew の `node -v` が同じ版になることを確認済み)。
   - shims が PATH に入るのは、`activate_shims`(既定 `true`)による。外すには `mise settings activate_shims=false` を実行してシェルを再起動する。詳しくは [Shims: Keep shims out of mise activate](https://mise.jdx.dev/dev-tools/shims.html#activate-shims)。
 
-  ## mise 自体のバージョン管理
+## mise 自体のバージョン管理
 
 公式ドキュメント: [Updating mise](https://mise.jdx.dev/installing-mise.html#updating) / [`mise self-update`](https://mise.jdx.dev/cli/self-update.html) / [`min_version`](https://mise.jdx.dev/configuration.html#minimum-mise-version)
 
