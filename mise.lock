@@ -3,25 +3,25 @@
 lockfile_version = 3
 
 [[tools.java]]
-version = "temurin-21.0.13+9.0.LTS"
+version = "zulu-21.54.107.0"
 backend = "core:java"
-specifiers = ["temurin-21"]
+specifiers = ["zulu-21"]
 
 [tools.java."platforms.linux-arm64"]
-checksum = "sha256:e3522e707fc7dbe2a72c30746b1e7068301a0213ecd213d4491f35a14eb55578"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.13_9.tar.gz"
+checksum = "sha256:783460592bc66c9290b14c32a537b29da812bd62ad53bf6cb565355bca7ea563"
+url = "https://cdn.azul.com/zulu/bin/zulu21.54.107-ca-jdk21.0.13-linux_aarch64.tar.gz"
 
 [tools.java."platforms.linux-x64"]
-checksum = "sha256:d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz"
+checksum = "sha256:dd8cf0628cfb8c369b7d4fe96783e2b516482b37d2b3e140b208c91deabf1169"
+url = "https://cdn.azul.com/zulu/bin/zulu21.54.107-ca-jdk21.0.13-linux_x64.tar.gz"
 
 [tools.java."platforms.macos-arm64"]
-checksum = "sha256:bf036b35b071bfb2f54f2c0af8ee8d88afa95ee6eb3dce02c0f94cfc2524d04a"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.13_9.tar.gz"
+checksum = "sha256:7682fcbbc3a164352d36c09c96b2aa91841c8bbafdb9a9a7f5f04db6d290a624"
+url = "https://cdn.azul.com/zulu/bin/zulu21.54.107-ca-jdk21.0.13-macosx_aarch64.tar.gz"
 
 [tools.java."platforms.macos-x64"]
-checksum = "sha256:9aa1d1c17ae5467a022679e7e0af5c00797d94ac462ed1a46f4db07a8a34a6dd"
-url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_mac_hotspot_21.0.13_9.tar.gz"
+checksum = "sha256:a6211ef2de128e72519556ea24c7ecb316ec5589b6ed705aef81c889b4233581"
+url = "https://cdn.azul.com/zulu/bin/zulu21.54.107-ca-jdk21.0.13-macosx_x64.tar.gz"
 
 [[tools.lefthook]]
 version = "2.2.2"
