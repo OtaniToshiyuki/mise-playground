@@ -151,6 +151,50 @@ mise はディレクトリ単位で有効になるため、新旧プロジェク
   - ただし、設定された版がないので、shim は **PATH の次の同名コマンド(nodebrew など)を起動する**。実質、これまでの `node` がそのまま動く(`mise.toml` のないディレクトリで shim 経由の `node -v` と nodebrew の `node -v` が同じ版になることを確認済み)。
   - shims が PATH に入るのは、`activate_shims`(既定 `true`)による。外すには `mise settings activate_shims=false` を実行してシェルを再起動する。詳しくは [Shims: Keep shims out of mise activate](https://mise.jdx.dev/dev-tools/shims.html#activate-shims)。
 
+## miseのバージョンの切り替え方式(activate / shims / exec)
+
+公式ドキュメント: [Shims](https://mise.jdx.dev/dev-tools/shims.html)(方式の比較表は「Choose how to use mise tools」)
+
+ディレクトリごとにツールの版を切り替える方式は、3 種類ある。
+
+| 方式                                         | 切り替えのタイミング                                    | `[env]` の環境変数                  | 向いている場面            |
+| -------------------------------------------- | ------------------------------------------------------- | ----------------------------------- | ------------------------- |
+| `mise activate`(このリポジトリの手順)        | `cd` やプロンプトの表示のとき(PATH を書き換える)        | シェルに設定される                  | 普段のターミナル          |
+| `mise activate --shims`(shims)               | **コマンドを実行するとき**(shim が実行のたびに版を選ぶ) | shim が起動するプログラムにだけ渡る | エディタ・IDE・GUI アプリ |
+| `mise exec -- <command>` / `mise run <task>` | コマンド 1 つごと                                       | そのコマンドにだけ渡る              | スクリプト・CI            |
+
+### shims とは
+
+- `node` や `pnpm` などのコマンド名の、小さな代理の実行ファイル(`~/.local/share/mise/shims`)。PATH に置かれる。
+- 実行されると、今のディレクトリの `mise.toml` を読んで版を選び、本物の実行ファイルを起動する。
+- 設定された版がないディレクトリでは、**PATH の次の同名コマンド**(nodebrew など)を起動する。
+
+### 方式による動きの違い
+
+- **ブランチを切り替えたとき**
+  - `activate`: ターミナルで `git checkout` したあと、次のプロンプトが出る時点で切り替わる。GitLens などの GUI で切り替えた場合は、ターミナルで Enter を 1 回押すまで切り替わらない(プロンプトが表示されないと、更新処理が動かないため)。
+  - shims: 次にコマンドを実行したときから新しい版になる。GUI で切り替えても、Enter は不要。
+- **`[env]` の環境変数**
+  - `activate`: シェル自体に設定されるので、`echo $VAR` でも見える。
+  - shims: 設定されるのは shim が起動するプログラム(とその子プロセス)だけ。`echo $VAR` や、shim を介さずに直接起動するコマンドには届かない(`mise.toml` に `[env]` と `node` を書いて、shims だけの PATH で試して確認済み)。
+- **`mise shell` / `mise deactivate`**: `activate` でのみ使える(`mise` シェル関数が定義されるため)。
+- **実行速度**: shims は実行のたびに `mise` を経由するぶん、わずかに遅い。
+
+### 方式を変える場合
+
+- `~/.zshrc` の有効化の行を**置き換える**(追記すると二重に有効化される)。
+
+  ```sh
+  # activate 方式(今)
+  eval "$(mise activate zsh)"
+  # shims 方式
+  eval "$(mise activate zsh --shims)"
+  ```
+
+- 変えたあとは `exec zsh` か、新しいターミナルを開く。
+- shims にすると、`which node` が shim を指すので、実際の版を確認するときは `mise which node` を使う。
+- 迷ったら `activate` のままでよい。GUI でブランチを切り替える頻度が高く、`[env]` を使わないなら、shims も選択肢になる。
+
 ## mise 自体のバージョン管理
 
 公式ドキュメント: [Updating mise](https://mise.jdx.dev/installing-mise.html#updating) / [`mise self-update`](https://mise.jdx.dev/cli/self-update.html) / [`min_version`](https://mise.jdx.dev/configuration.html#minimum-mise-version)
