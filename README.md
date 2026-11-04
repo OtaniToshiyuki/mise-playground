@@ -21,7 +21,7 @@ lefthook install  # lefthook.yml の Git フックを .git に登録する
 
 `mise.toml`に記載されたtoolsをmiseが管理する領域にインストールする
 
-[mise install](https://mise.jdx.dev/cli/install.html#mise-install)。
+docs: [mise install](https://mise.jdx.dev/cli/install.html#mise-install)
 
 - 引数なしの `mise install` は、設定(`mise.toml`)が求めるツールのうち、**まだ入っていない版だけ**を入れる。入っていれば何もしない。
 - `mise install node@24` のようにツールを指定すると、その版を入れる。ツール名だけ(`mise install node`)なら、設定が求める版を入れる。
@@ -38,37 +38,102 @@ lefthook install  # lefthook.yml の Git フックを .git に登録する
 
 ## mise の有効化(activate)
 
-[mise-activate](https://mise.jdx.dev/cli/activate.html#mise-activate)より。
+docs: [mise-activate](https://mise.jdx.dev/cli/activate.html#mise-activate)
 
 リポジトリ間で自動的に tools のバージョンを切り替えるためには、シェルのディレクトリ移動などのタイミングをトリガーにする必要がある。
-`mise activate`コマンドで出力されるスクリプトをシェルの`eval`で評価しシェルに登録することで、ディレクトリ移動時やプロンプト表示の直前のフックにmiseの更新処理が登録される。
 
-詳しい流れは、次の「仕組み」を参照。
+`mise activate`コマンドで出力されるスクリプトをシェルの`eval`で評価することで、ディレクトリ移動時やプロンプト表示の直前のフックにmiseの更新処理が登録される。
 
-- GitHub Actions の `jdx/mise-action` は PATH を後続のステップに渡すので、`mise exec` なしで `pnpm ...` などをそのまま実行できる(「CI(GitHub Actions)」参照)。
-
-### 仕組み
-
-1. `mise activate zsh` は、zsh 用の**スクリプトを出力する**だけで、それ自体は何も有効にしない。
-2. `eval` と組み合わせる(`eval "$(mise activate zsh)"`)と、出力されたスクリプトが**実行したシェルの中で**実行され、有効になる。`.zshrc` に書くと、シェルを開くたびに 1 回実行される。
-3. 実行されたスクリプトの中で、zsh の `precmd`(プロンプト表示の直前)と `chpwd`(ディレクトリ移動時)に、mise の更新処理(`mise hook-env`)が登録される。
-4. 以降は、ディレクトリを移動したり、コマンドが終わってプロンプトが出たりするたびに、zsh がその処理を呼ぶ。そのため、移動した先の `mise.toml` に合わせて、ツールの PATH と環境変数が切り替わる。
+- 実行されたスクリプトの中で、zsh の `precmd`(プロンプト表示の直前)と `chpwd`(ディレクトリ移動時)に、mise の更新処理(`mise hook-env`)が登録される。
 
 ## lefthook
 
-### 役割
+docs: [lefthook GitHub](https://github.com/evilmartians/lefthook)
+
+pull やブランチ切替をトリガーに `mise install` を実行し、`mise.toml` の版を自動で適用するために使用する。
 
 - Git のフック(`pre-push` / `post-merge` / `post-checkout` など、Git の操作に合わせて自動で走る処理)を、`lefthook.yml` で一括管理するツール。
 - `.git/hooks/` はコミットされないので、そのままではチームで共有できない。lefthook は設定ファイルを `lefthook.yml` としてリポジトリに置き、全員が同じフックを使えるようにする。
-- このリポジトリでの用途:
-  - `post-merge` / `post-checkout`: pull やブランチ切替のあとに `mise install --quiet` を実行し、`mise.toml` の版を自動で適用する。`--quiet`(`-q`)は進捗や情報メッセージを出さないオプションで、エラーだけ表示される。pull / checkout のたびに出力が流れないようにしている。
-- lefthook 本体も mise で版を固定している(`mise.toml`)。
 
 ### 仕組み
 
 - `lefthook install` を実行すると、`.git/hooks/` には `lefthook.yml` に登録されているフックの実行スクリプト(`pre-push` / `post-merge` など)のみが記録される。
-- `lefthook.yml` の内容(`commands` や `run` など)はスクリプトに書き込まれず、フックが走るたびに読み直される。
+- `lefthook.yml` の内容(`commands` や `run` など)は`.git/hooks/`に書き込まれず、フックが走るたびに読み直される。
 - `lefthook run` のたびに、`lefthook.yml` が変わっていないかを `.git/info/lefthook.checksum`(内容のハッシュ)で確認する。変わっていれば `.git/hooks/` を自動で同期する。
+
+## CI(GitHub Actions)
+
+公式ドキュメント: [Continuous integration](https://mise.jdx.dev/continuous-integration.html#github-actions) / [jdx/mise-action](https://github.com/jdx/mise-action)
+
+- CI でも、開発と同じ `mise.toml` を使う。
+- GitHub Actions では `jdx/mise-action` を使う。`uses:` の 1 行で、次のことが行われる。
+  - mise 本体のインストールと、`mise.toml` に書かれたツールの `mise install`(入力 `install` の既定値が `true`)
+  - ツールのキャッシュ(`cache` の既定値が `true`)
+  - mise の PATH と環境変数を、後続のステップに渡す(`export_path` / `env` の既定値が `true`)
+- そのため、後続の `run: pnpm ...` や `run: eas --version` は、`mise exec` なしでそのまま動く。
+- `mise.lock` があると、`mise install --locked` が自動で実行される。全ジョブが同じ版を入れられ、版の一覧を毎回取得しなくて済む。ロックファイルは、CI の実行環境ごとに作る。
+
+  ```sh
+  mise lock --platform linux-x64,linux-arm64,macos-arm64
+  ```
+
+- `actions/checkout` を `mise-action` より前に置く(`mise.toml` を読むため)。
+- このリポジトリの例(`.github/workflows/ci.yml`)
+
+  ```yaml
+  steps:
+    - uses: actions/checkout@v7
+    - uses: jdx/mise-action@v5
+    - run: eas --version
+    - run: firebase --version
+    - run: java -version
+  ```
+
+- 主な入力: `version`(mise の版を固定)、`working_directory`(サブプロジェクトを指定)、`cache`(キャッシュの切替)。詳しくは [action の入力](https://github.com/jdx/mise-action/blob/v5/action.yml)。
+- `mise-action` を使わず自分で `mise install` する場合は、後続の `run:` を `mise exec -- <command>` か `mise run <task>` にする。
+
+## 新旧プロジェクトでの混在
+
+mise はディレクトリ単位で有効になるため、新旧プロジェクトは混在可能。
+
+- `mise.toml` があるプロジェクトでは、mise のツールが PATH の先頭に入り、mise 版が優先される。
+- `mise.toml` がないプロジェクトでは、これまでの PATH(nodebrew・Homebrew などの既存ツール)がそのまま使われる。
+  - `mise activate` は、shims ディレクトリ(`~/.local/share/mise/shims`)を PATH に足すので、`which -a node` では shim が先頭に表示される。
+  - ただし、設定された版がないので、shim は **PATH の次の同名コマンド(nodebrew など)を起動する**。実質、これまでの `node` がそのまま動く(`mise.toml` のないディレクトリで shim 経由の `node -v` と nodebrew の `node -v` が同じ版になることを確認済み)。
+  - shims が PATH に入るのは、`activate_shims`(既定 `true`)による。外すには `mise settings activate_shims=false` を実行してシェルを再起動する。詳しくは [Shims: Keep shims out of mise activate](https://mise.jdx.dev/dev-tools/shims.html#activate-shims)。
+
+  ## mise 自体のバージョン管理
+
+公式ドキュメント: [Updating mise](https://mise.jdx.dev/installing-mise.html#updating) / [`mise self-update`](https://mise.jdx.dev/cli/self-update.html) / [`min_version`](https://mise.jdx.dev/configuration.html#minimum-mise-version)
+
+### 更新のしかた(インストール方法で変わる)
+
+| 入れ方           | 更新方法                                              |
+| ---------------- | ----------------------------------------------------- |
+| `mise.run`(推奨) | `mise self-update`                                    |
+| Homebrew         | `brew upgrade mise`(`self-update` は無効になっている) |
+
+- `mise self-update` は、GitHub Releases から最新の安定版を取得し、署名を検証してから入れ替える。公開から 24 時間未満の版は選ばれない(`self_update.minimum_release_age`、なければ `minimum_release_age` の設定、既定 24 時間)。`mise self-update 2026.10.25` のように版を指定すると、この遅延は無視される。
+- 自動で更新するなら `mise settings self_update.auto=true`(グローバル設定)。
+
+### 最低限の版をそろえる(`min_version`)
+
+`mise.toml` で新しい機能を使うときは、全員に特定の版を求める代わりに、最低限の版を書く。
+
+```toml
+min_version = "2026.10.0"
+```
+
+- 文字列だけ書くと、古い mise はエラーで止まり、更新の案内が表示される(必須の最低版)。
+- 警告だけにしたいときは、`hard`(必須)と `soft`(推奨)を分けて書く。
+
+  ```toml
+  min_version = { hard = "2026.1.0", soft = "2026.10.0" }
+  ```
+
+### CI の mise の版
+
+- `jdx/mise-action` は、`version` を指定しなければ、公開から 24 時間以上経った最新の安定版を入れる。固定するなら `version: 2026.10.23` のように書く(詳しくは「CI(GitHub Actions)」)。
 
 ## pnpm について
 
@@ -109,47 +174,6 @@ lefthook install  # lefthook.yml の Git フックを .git に登録する
   - 他の古いプロジェクトで使っているなら、残してよい。mise を有効化したディレクトリでは mise 版が優先される。
   - すべて mise に移した場合、`~/.zshrc` / `~/.zprofile` の `PATH="$HOME/.nodebrew/current/bin:$PATH"` の行を消し、`~/.nodebrew` を削除する。削除前に `npm ls -g` でグローバルパッケージの有無を確認する。
 - Vercel など `mise.toml` を読まない環境では、`package.json` の `engines.node` で指定する。
-
-## CI(GitHub Actions)
-
-公式ドキュメント: [Continuous integration](https://mise.jdx.dev/continuous-integration.html#github-actions) / [jdx/mise-action](https://github.com/jdx/mise-action)
-
-- CI でも、開発と同じ `mise.toml` を使う。CI では `activate` は不要。
-- GitHub Actions では `jdx/mise-action` を使う。`uses:` の 1 行で、次のことが行われる。
-  - mise 本体のインストールと、`mise.toml` に書かれたツールの `mise install`(入力 `install` の既定値が `true`)
-  - ツールのキャッシュ(`cache` の既定値が `true`)
-  - mise の PATH と環境変数を、後続のステップに渡す(`export_path` / `env` の既定値が `true`)
-- そのため、後続の `run: pnpm ...` や `run: eas --version` は、`mise exec` なしでそのまま動く。
-- `mise.lock` があると、`mise install --locked` が自動で実行される。全ジョブが同じ版を入れられ、版の一覧を毎回取得しなくて済む。ロックファイルは、CI の実行環境ごとに作る。
-
-  ```sh
-  mise lock --platform linux-x64,linux-arm64,macos-arm64
-  ```
-
-- `actions/checkout` を `mise-action` より前に置く(`mise.toml` を読むため)。
-- このリポジトリの例(`.github/workflows/ci.yml`)
-
-  ```yaml
-  steps:
-    - uses: actions/checkout@v7
-    - uses: jdx/mise-action@v5
-    - run: eas --version
-    - run: firebase --version
-    - run: java -version
-  ```
-
-- 主な入力: `version`(mise の版を固定)、`working_directory`(サブプロジェクトを指定)、`cache`(キャッシュの切替)。詳しくは [action の入力](https://github.com/jdx/mise-action/blob/v5/action.yml)。
-- `mise-action` を使わず自分で `mise install` する場合は、後続の `run:` を `mise exec -- <command>` か `mise run <task>` にする。
-
-## 新旧プロジェクトでの混在
-
-mise はディレクトリ単位で有効になるため、新旧プロジェクトは混在可能。
-
-- `mise.toml` があるプロジェクトでは、mise のツールが PATH の先頭に入り、mise 版が優先される。
-- `mise.toml` がないプロジェクトでは、これまでの PATH(nodebrew・Homebrew などの既存ツール)がそのまま使われる。
-  - `mise activate` は、shims ディレクトリ(`~/.local/share/mise/shims`)を PATH に足すので、`which -a node` では shim が先頭に表示される。
-  - ただし、設定された版がないので、shim は **PATH の次の同名コマンド(nodebrew など)を起動する**。実質、これまでの `node` がそのまま動く(`mise.toml` のないディレクトリで shim 経由の `node -v` と nodebrew の `node -v` が同じ版になることを確認済み)。
-  - shims が PATH に入るのは、`activate_shims`(既定 `true`)による。外すには `mise settings activate_shims=false` を実行してシェルを再起動する。詳しくは [Shims: Keep shims out of mise activate](https://mise.jdx.dev/dev-tools/shims.html#activate-shims)。
 
 ## miseのバージョンの切り替え方式(activate / shims / exec)
 
@@ -194,36 +218,3 @@ mise はディレクトリ単位で有効になるため、新旧プロジェク
 - 変えたあとは `exec zsh` か、新しいターミナルを開く。
 - shims にすると、`which node` が shim を指すので、実際の版を確認するときは `mise which node` を使う。
 - 迷ったら `activate` のままでよい。GUI でブランチを切り替える頻度が高く、`[env]` を使わないなら、shims も選択肢になる。
-
-## mise 自体のバージョン管理
-
-公式ドキュメント: [Updating mise](https://mise.jdx.dev/installing-mise.html#updating) / [`mise self-update`](https://mise.jdx.dev/cli/self-update.html) / [`min_version`](https://mise.jdx.dev/configuration.html#minimum-mise-version)
-
-### 更新のしかた(インストール方法で変わる)
-
-| 入れ方           | 更新方法                                              |
-| ---------------- | ----------------------------------------------------- |
-| `mise.run`(推奨) | `mise self-update`                                    |
-| Homebrew         | `brew upgrade mise`(`self-update` は無効になっている) |
-
-- `mise self-update` は、GitHub Releases から最新の安定版を取得し、署名を検証してから入れ替える。公開から 24 時間未満の版は選ばれない(`self_update.minimum_release_age`、なければ `minimum_release_age` の設定、既定 24 時間)。`mise self-update 2026.10.25` のように版を指定すると、この遅延は無視される。
-- 自動で更新するなら `mise settings self_update.auto=true`(グローバル設定)。
-
-### 最低限の版をそろえる(`min_version`)
-
-`mise.toml` で新しい機能を使うときは、全員に特定の版を求める代わりに、最低限の版を書く。
-
-```toml
-min_version = "2026.10.0"
-```
-
-- 文字列だけ書くと、古い mise はエラーで止まり、更新の案内が表示される(必須の最低版)。
-- 警告だけにしたいときは、`hard`(必須)と `soft`(推奨)を分けて書く。
-
-  ```toml
-  min_version = { hard = "2026.1.0", soft = "2026.10.0" }
-  ```
-
-### CI の mise の版
-
-- `jdx/mise-action` は、`version` を指定しなければ、公開から 24 時間以上経った最新の安定版を入れる。固定するなら `version: 2026.10.23` のように書く(詳しくは「CI(GitHub Actions)」)。
