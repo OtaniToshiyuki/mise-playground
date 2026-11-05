@@ -218,3 +218,11 @@ min_version = "2026.10.0"
 - 変えたあとは `exec zsh` か、新しいターミナルを開く。
 - shims にすると、`which node` が shim を指すので、実際の版を確認するときは `mise which node` を使う。
 - 迷ったら `activate` のままでよい。GUI でブランチを切り替える頻度が高く、`[env]` を使わないなら、shims も選択肢になる。
+
+## 依存更新の自動化(Renovate / Dependabot)
+
+`mise.toml` / `mise.lock` の更新は **Renovate** が対応している。**Dependabot は mise 非対応**
+
+docs: [Renovate mise manager](https://docs.renovatebot.com/modules/manager/mise/) / [Dependabot supported ecosystems](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories)
+
+- Dependabot の mise 対応要望: [dependabot-core#12320](https://github.com/dependabot/dependabot-core/issues/12320)(Open / On Hold。試作 PR #14500 あり)
