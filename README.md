@@ -192,6 +192,7 @@ min_version = "2026.10.0"
 - `node` や `pnpm` などのコマンド名の、小さな代理の実行ファイル(`~/.local/share/mise/shims`)。PATH に置かれる。
 - 実行されると、今のディレクトリの `mise.toml` を読んで版を選び、本物の実行ファイルを起動する。
 - 設定された版がないディレクトリでは、**PATH の次の同名コマンド**(nodebrew など)を起動する。
+- 指定された版が未インストールなら、**shim を実行した時点**で自動インストールされる(`auto_install` が `true` の場合)。`mise activate --shims` を実行しただけでは何もインストールされない。通常の `activate` では、プロンプト表示やディレクトリ移動の時点では自動インストールされない(`mise install` を実行する)。
 
 ### 方式による動きの違い
 
@@ -218,6 +219,18 @@ min_version = "2026.10.0"
 - 変えたあとは `exec zsh` か、新しいターミナルを開く。
 - shims にすると、`which node` が shim を指すので、実際の版を確認するときは `mise which node` を使う。
 - 迷ったら `activate` のままでよい。GUI でブランチを切り替える頻度が高く、`[env]` を使わないなら、shims も選択肢になる。
+
+### shims が有効なケース
+
+`~/.zshrc` が読まれない(プロンプトが出ないので `activate` の PATH 更新が動かない)経路でツールが呼ばれる場合。
+
+- **Dock / Finder から起動した GUI アプリ**: VS Code、IntelliJ、Sourcetree、Xcode など。シェルを経由しない。
+- **GUI アプリが裏で動かすツール**: エディタの ESLint / Prettier / 言語サーバー、Java のビルドなどが `node` / `java` を直接起動する。
+- **GUI の git クライアントから実行される hook**: Sourcetree の commit / checkout で lefthook が走り、`node` / `mise` が PATH にない。
+- **非対話シェルから実行されるスクリプト**: `zsh -c "..."`、`ssh host command`、cron、launchd。
+- **GUI でブランチを頻繁に切り替える人**: `activate` はプロンプトが出るまで切り替わらないが、shims は次のコマンド実行時に切り替わる。
+
+逆に、`[env]` をシェルから見たい場合や、普段ターミナル中心の使い方なら `activate` のほうが向いている。
 
 ## 依存更新の自動化(Renovate / Dependabot)
 
